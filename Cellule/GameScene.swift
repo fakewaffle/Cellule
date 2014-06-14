@@ -9,8 +9,7 @@
 import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
-
-    var cells: SKSpriteNode[] = []
+    var cells: Cell[] = []
 
     override func didMoveToView( view: SKView ) {
 
@@ -18,7 +17,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsWorld.gravity         = CGVectorMake( 0, 0 )
         self.physicsWorld.contactDelegate = self
 
-        self.physicsBody = SKPhysicsBody( edgeLoopFromRect: self.frame )
+        self.physicsBody         = SKPhysicsBody( edgeLoopFromRect: self.frame )
+        self.physicsBody.dynamic = false;
 
 //        self.physicsBody.categoryBitMask    = 1 << 0
 //        self.physicsBody.collisionBitMask   = 1 << 0
@@ -49,17 +49,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update( currentTime: CFTimeInterval ) {
         for cell in cells {
-            if cell.physicsBody.velocity.dx < 100 && cell.physicsBody.velocity.dy < 100 {
-                cell.physicsBody.applyImpulse( getRandomVelocity( 500 ) )
-            }
+            cell.move()
         }
     }
 
     func didBeginContact( contact: SKPhysicsContact ) {
         if contact.bodyA.categoryBitMask != contact.bodyB.categoryBitMask {
-//            if contact.bodyA.node.traits.strength > contact.bodyB.node.traits.strength {
-                contact.bodyA.node.removeFromParent()
-//            }
+            if let cell = contact.bodyA.node as? Cell {
+                cell.collidedWith( contact.bodyB )
+            }
+
+            if let cell = contact.bodyB.node as? Cell {
+                cell.collidedWith( contact.bodyA )
+            }
         }
     }
 

@@ -12,6 +12,11 @@ class Cell: SKSpriteNode {
 
     let colors = [ "Red", "Blue", "Green" ]
 
+    var traits = [
+        "strength"    : 100,
+        "maxVelocity" : 100
+    ]
+
     let redCategory: UInt32   = 1 << 0
     let blueCategory: UInt32  = 1 << 1
     let greenCategory: UInt32 = 1 << 2
@@ -20,6 +25,8 @@ class Cell: SKSpriteNode {
         let index = Int( arc4random_uniform( UInt32( colors.count ) ) )
 
         super.init( imageNamed: "Cell-" + colors[ index ] )
+
+        self.setTraits()
 
         let scale = CGFloat( randRange( 30, upper: 50 ) ) / 1000
 
@@ -41,15 +48,34 @@ class Cell: SKSpriteNode {
         self.physicsBody.collisionBitMask   = redCategory | blueCategory | greenCategory
         self.physicsBody.contactTestBitMask = redCategory | blueCategory | greenCategory
         
-        self.physicsBody.velocity = getRandomVelocity( 500 )
+        self.physicsBody.velocity = getRandomVelocity( 10 )
     }
 
     init( texture: SKTexture ) {
         super.init( texture: texture )
     }
 
-    init( texture: SKTexture, color: UIColor, size: CGSize ) {
-        super.init( texture: texture, color: color, size: size )
+    init( texture: SKTexture?, color: SKColor?, size: CGSize ) {
+        super.init( texture: texture, color:color, size:size )
+    }
+
+    func setTraits() {
+        self.traits[ "strength" ]    = self.randRange( 1, upper: 100 )
+        self.traits[ "maxVelocity" ] = self.randRange( 1, upper: 500 )
+    }
+
+    func collidedWith( other: SKPhysicsBody ) {
+        if let enemy = other.node as? Cell {
+            if self.traits[ "strength" ] > enemy.traits[ "strength" ] {
+                enemy.removeFromParent()
+            }
+        }
+    }
+
+    func move() {
+        if self.physicsBody.velocity.dx < 50 && self.physicsBody.velocity.dy < 50 {
+            self.physicsBody.applyImpulse( self.getRandomVelocity( self.traits[ "maxVelocity" ]! ) )
+        }
     }
 
     func getRandomPoint() -> CGPoint {
