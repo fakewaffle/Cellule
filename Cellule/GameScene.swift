@@ -32,8 +32,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for index in 1...200 {
             var cell = Cell( location: getRandomPoint(), species: randRange( 0, 2 ) )
 
-            addChild( cell )
-            cells.append( cell )
+            self.addChild( cell )
+            self.cells.append( cell )
         }
 
     }
@@ -44,14 +44,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
             var cell = Cell( location: location, species: randRange( 0, 2 ) )
 
-            addChild( cell )
-            cells.append( cell )
+            self.addChild( cell )
+            self.cells.append( cell )
         }
     }
     
     override func update( currentTime: CFTimeInterval ) {
-        for cell in cells {
+        for cell in self.cells {
             cell.update()
+        }
+    }
+
+    func addCell( offspring: Cell ) {
+        self.cells.append( offspring )
+        self.addChild( offspring )
+    }
+
+    func removeCell( killed: Cell ) {
+        killed.removeFromParent()
+
+        for (i, value) in enumerate( self.cells ) {
+            if killed == value {
+                self.cells.removeAtIndex( i )
+            }
         }
     }
 
@@ -60,13 +75,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
             if let cell = contact.bodyA.node as? Cell {
                 if let enemy = contact.bodyB.node as? Cell {
-                    cell.attack( enemy )
+                    var dead = cell.attack( enemy )
+
+                    if let killed = dead as? Cell {
+                        self.removeCell( killed )
+                    }
                 }
             }
 
             if let cell = contact.bodyB.node as? Cell {
                 if let enemy = contact.bodyA.node as? Cell {
-                    cell.attack( enemy )
+                    var dead = cell.attack( enemy )
+
+                    if let killed = dead as? Cell {
+                        self.removeCell( killed )
+                    }
                 }
             }
 
@@ -77,8 +100,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     if cell.canMate == true && mate.canMate == true {
                         var offspring = cell.mate( mate )
 
-                        cells.append( offspring )
-                        addChild( offspring )
+                        self.addCell( offspring )
                     }
                 }
             }
@@ -88,8 +110,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     if cell.canMate == true && mate.canMate == true {
                         var offspring = cell.mate( mate )
 
-                        cells.append( offspring )
-                        addChild( offspring )
+                        self.addCell( offspring )
                     }
                 }
             }

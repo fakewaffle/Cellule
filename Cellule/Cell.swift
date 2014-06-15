@@ -14,6 +14,7 @@ class Cell: SKSpriteNode {
 
     // :(
     let species: Int?
+    let index: Int?
 
     // TODO: move traits to a struct
     let strength    = randRange( 10, 50 )
@@ -84,10 +85,12 @@ class Cell: SKSpriteNode {
         }
     }
 
-    func attack( enemy: Cell ) {
-        if self.strength > enemy.strength {
-            enemy.removeFromParent()
+    func attack( enemy: Cell ) -> Cell? {
+        if self.strength >= enemy.strength {
+            return enemy
         }
+
+        return nil
     }
 
     func mate( mate: Cell ) -> Cell {
