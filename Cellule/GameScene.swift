@@ -8,6 +8,10 @@
 
 import SpriteKit
 
+func randRange( lower: Int, upper: Int ) -> Int {
+    return lower + Int( arc4random_uniform( UInt32( upper - lower + 1 ) ) )
+}
+
 class GameScene: SKScene, SKPhysicsContactDelegate {
     var cells: Cell[] = []
 
@@ -20,15 +24,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsBody         = SKPhysicsBody( edgeLoopFromRect: self.frame )
         self.physicsBody.dynamic = false;
 
-//        self.physicsBody.categoryBitMask    = 1 << 0
-//        self.physicsBody.collisionBitMask   = 1 << 0
-//        self.physicsBody.contactTestBitMask = 1 << 0
+        self.physicsBody.contactTestBitMask = 1 << 10
 
         // setup background color
         self.backgroundColor = SKColor( red: 50 / 255.0, green: 50 / 255.0, blue: 50 / 255.0, alpha: 1.0 )
 
-        for index in 1...100 {
-            var cell = Cell( location: getRandomPoint() )
+        for index in 1...200 {
+            var cell = Cell( location: getRandomPoint(), species: randRange( 0, 2 ) )
 
             addChild( cell )
             cells.append( cell )
@@ -40,7 +42,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for touch: AnyObject in touches {
             let location = touch.locationInNode( self )
 
-            var cell = Cell( location: location )
+            var cell = Cell( location: location, species: randRange( 0, 2 ) )
 
             addChild( cell )
             cells.append( cell )
@@ -49,19 +51,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update( currentTime: CFTimeInterval ) {
         for cell in cells {
-            cell.move()
+            cell.update()
         }
     }
 
     func didBeginContact( contact: SKPhysicsContact ) {
         if contact.bodyA.categoryBitMask != contact.bodyB.categoryBitMask {
+
             if let cell = contact.bodyA.node as? Cell {
-                cell.collidedWith( contact.bodyB )
+                if let enemy = contact.bodyB.node as? Cell {
+                    cell.attack( enemy )
+                }
             }
 
             if let cell = contact.bodyB.node as? Cell {
-                cell.collidedWith( contact.bodyA )
+                if let enemy = contact.bodyA.node as? Cell {
+                    cell.attack( enemy )
+                }
             }
+
+        } else {
+
+            if let cell = contact.bodyA.node as? Cell {
+                if let mate = contact.bodyB.node as? Cell {
+                    if cell.canMate == true && mate.canMate == true {
+                        var offspring = cell.mate( mate )
+
+                        cells.append( offspring )
+                        addChild( offspring )
+                    }
+                }
+            }
+
+            if let cell = contact.bodyB.node as? Cell {
+                if let mate = contact.bodyA.node as? Cell {
+                    if cell.canMate == true && mate.canMate == true {
+                        var offspring = cell.mate( mate )
+
+                        cells.append( offspring )
+                        addChild( offspring )
+                    }
+                }
+            }
+
         }
     }
 
@@ -72,15 +104,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         return CGPoint( x: x, y: y )
     }
 
-    func randRange( lower: Int, upper: Int ) -> Int {
-        return lower + Int( arc4random_uniform( UInt32( upper - lower + 1 ) ) )
-    }
-
-    func getRandomVelocity( r: Int ) -> CGVector {
-        let x = randRange( -r, upper: r )
-        let y = randRange( -r, upper: r )
-
-        return CGVector( x, y )
-    }
 
 }

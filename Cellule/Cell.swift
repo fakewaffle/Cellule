@@ -10,45 +10,35 @@ import SpriteKit
 
 class Cell: SKSpriteNode {
 
-    let colors = [ "Red", "Blue", "Green" ]
+    let textures = [ "Cell-Red", "Cell-Blue", "Cell-Green" ]
 
-    var traits = [
-        "strength"    : 100,
-        "maxVelocity" : 100
-    ]
+    // :(
+    let species: Int?
+
+    // TODO: move traits to a struct
+    let strength    = randRange( 10, 50 )
+    let maxVelocity = randRange( 1, 500 )
+
+    var energy  = 100
+    var canMate = true
+    var canMove = true
 
     let redCategory: UInt32   = 1 << 0
     let blueCategory: UInt32  = 1 << 1
     let greenCategory: UInt32 = 1 << 2
 
-    init( location: CGPoint ) {
-        let index = Int( arc4random_uniform( UInt32( colors.count ) ) )
+    init( location: CGPoint, species: Int ) {
+        super.init( imageNamed: textures[ species ] )
 
-        super.init( imageNamed: "Cell-" + colors[ index ] )
+        // :(
+        self.species = species
 
-        self.setTraits()
+        let scale = CGFloat( self.strength ) / 1000
 
-        let scale = CGFloat( randRange( 30, upper: 50 ) ) / 1000
-
+        self.setLocation( location )
         self.setScale( scale )
-        self.position = location
-
-        let duration = Double( arc4random_uniform( UInt32( 15 ) ) ) + 5
-        let grow     = SKAction.scaleTo( 0.05, duration: duration )
-        let shrink   = SKAction.scaleTo( 0.03, duration: duration )
-
-        self.runAction( SKAction.repeatActionForever( SKAction.sequence( [ shrink, grow ] ) ) )
-
-        self.physicsBody                = SKPhysicsBody( circleOfRadius: self.size.height / 2.0 )
-        self.physicsBody.mass           = 100 // CGFloat( arc4random_uniform( UInt32( 100 ) ) ) + 1
-        self.physicsBody.dynamic        = true
-        self.physicsBody.allowsRotation = true
-
-        self.physicsBody.categoryBitMask    = 1 << UInt32( index )
-        self.physicsBody.collisionBitMask   = redCategory | blueCategory | greenCategory
-        self.physicsBody.contactTestBitMask = redCategory | blueCategory | greenCategory
-        
-        self.physicsBody.velocity = getRandomVelocity( 10 )
+        self.animate( scale )
+        self.setPhysics( species )
     }
 
     init( texture: SKTexture ) {
@@ -59,39 +49,60 @@ class Cell: SKSpriteNode {
         super.init( texture: texture, color:color, size:size )
     }
 
-    func setTraits() {
-        self.traits[ "strength" ]    = self.randRange( 1, upper: 100 )
-        self.traits[ "maxVelocity" ] = self.randRange( 1, upper: 500 )
+    func setLocation( location: CGPoint ) {
+        self.position = location
     }
 
-    func collidedWith( other: SKPhysicsBody ) {
-        if let enemy = other.node as? Cell {
-            if self.traits[ "strength" ] > enemy.traits[ "strength" ] {
-                enemy.removeFromParent()
-            }
-        }
+    func setPhysics( species: Int ) {
+        self.physicsBody                = SKPhysicsBody( circleOfRadius: self.size.height / 2.0 )
+        self.physicsBody.mass           = 100 // CGFloat( arc4random_uniform( UInt32( 100 ) ) ) + 1
+        self.physicsBody.dynamic        = true
+        self.physicsBody.allowsRotation = true
+
+        self.physicsBody.categoryBitMask    = 1 << UInt32( species )
+        self.physicsBody.collisionBitMask   = redCategory | blueCategory | greenCategory
+        self.physicsBody.contactTestBitMask = redCategory | blueCategory | greenCategory
+
+        self.physicsBody.velocity = getRandomVelocity( 10 )
+    }
+
+    func update() {
+        self.move()
+    }
+
+    func animate( scale: CGFloat ) {
+        let duration = Double( arc4random_uniform( UInt32( 15 ) ) ) + 5
+        let grow     = SKAction.scaleTo( scale * 1.1, duration: duration )
+        let shrink   = SKAction.scaleTo( scale * 0.9, duration: duration )
+
+        self.runAction( SKAction.repeatActionForever( SKAction.sequence( [ shrink, grow ] ) ) )
     }
 
     func move() {
         if self.physicsBody.velocity.dx < 50 && self.physicsBody.velocity.dy < 50 {
-            self.physicsBody.applyImpulse( self.getRandomVelocity( self.traits[ "maxVelocity" ]! ) )
+            self.physicsBody.applyImpulse( self.getRandomVelocity( self.maxVelocity ) )
         }
     }
 
-    func getRandomPoint() -> CGPoint {
-        var x: Int = Int( arc4random_uniform( UInt32( size.width - 10 ) ) ) + 10
-        var y: Int = Int( arc4random_uniform( UInt32( size.height - 10 ) ) ) + 10
-
-        return CGPoint( x: x, y: y )
+    func attack( enemy: Cell ) {
+        if self.strength > enemy.strength {
+            enemy.removeFromParent()
+        }
     }
 
-    func randRange( lower: Int, upper: Int ) -> Int {
-        return lower + Int( arc4random_uniform( UInt32( upper - lower + 1 ) ) )
+    func mate( mate: Cell ) -> Cell {
+        var location  = CGPoint( x: self.position.x + self.size.height, y: self.position.y + self.size.width )
+        var offspring = Cell( location: location, species: self.species! )
+
+        self.canMate = false
+        mate.canMate = false
+
+        return offspring
     }
 
     func getRandomVelocity( r: Int ) -> CGVector {
-        let x = randRange( -r, upper: r )
-        let y = randRange( -r, upper: r )
+        let x = randRange( -r, r )
+        let y = randRange( -r, r )
 
         return CGVector( x, y )
     }
