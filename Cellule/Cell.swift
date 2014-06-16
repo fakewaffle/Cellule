@@ -12,17 +12,16 @@ class Cell: SKSpriteNode {
 
     let textures = [ "Cell-Red", "Cell-Blue", "Cell-Green" ]
 
-    // :(
     let species: Int?
     let index: Int?
+    var matingTimer: NSTimer?
 
     // TODO: move traits to a struct
-    let strength    = randRange( 10, 50 )
-    let maxVelocity = randRange( 1, 500 )
+    let strength       = randRange( 10, 50 )
+    let maxVelocity    = randRange( 1, 200 )
+    let matingInterval = randRange( 3, 30 )
 
-    var energy  = 100
     var canMate = true
-    var canMove = true
 
     let redCategory: UInt32   = 1 << 0
     let blueCategory: UInt32  = 1 << 1
@@ -31,7 +30,6 @@ class Cell: SKSpriteNode {
     init( location: CGPoint, species: Int ) {
         super.init( imageNamed: textures[ species ] )
 
-        // :(
         self.species = species
 
         let scale = CGFloat( self.strength ) / 1000
@@ -56,7 +54,7 @@ class Cell: SKSpriteNode {
 
     func setPhysics( species: Int ) {
         self.physicsBody                = SKPhysicsBody( circleOfRadius: self.size.height / 2.0 )
-        self.physicsBody.mass           = 100 // CGFloat( arc4random_uniform( UInt32( 100 ) ) ) + 1
+        self.physicsBody.mass           = CGFloat( self.strength )
         self.physicsBody.dynamic        = true
         self.physicsBody.allowsRotation = true
 
@@ -85,6 +83,7 @@ class Cell: SKSpriteNode {
         }
     }
 
+    // TODO: should probably fire an event on enemy that lets the GameScene know to remove
     func attack( enemy: Cell ) -> Cell? {
         if self.strength >= enemy.strength {
             return enemy
@@ -97,10 +96,21 @@ class Cell: SKSpriteNode {
         var location  = CGPoint( x: self.position.x + self.size.height, y: self.position.y + self.size.width )
         var offspring = Cell( location: location, species: self.species! )
 
-        self.canMate = false
-        mate.canMate = false
+        self.canMate      = false
+        mate.canMate      = false
+        offspring.canMate = false
+
+        let selector = Selector( "matingTimerTrigger" )
+
+        self.matingTimer      = NSTimer.scheduledTimerWithTimeInterval( NSTimeInterval( self.matingInterval ), target: self, selector: selector, userInfo: nil, repeats: false )
+        mate.matingTimer      = NSTimer.scheduledTimerWithTimeInterval( NSTimeInterval( mate.matingInterval ), target: mate, selector: selector, userInfo: nil, repeats: false )
+        offspring.matingTimer = NSTimer.scheduledTimerWithTimeInterval( NSTimeInterval( offspring.matingInterval ), target: offspring, selector: selector, userInfo: nil, repeats: false )
 
         return offspring
+    }
+
+    func matingTimerTrigger() {
+        self.canMate = true
     }
 
     func getRandomVelocity( r: Int ) -> CGVector {
