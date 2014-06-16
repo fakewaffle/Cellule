@@ -13,7 +13,6 @@ class Cell: SKSpriteNode {
     let textures = [ "Cell-Red", "Cell-Blue", "Cell-Green" ]
 
     let species: Int?
-    let index: Int?
     var matingTimer: NSTimer?
 
     // TODO: move traits to a struct
